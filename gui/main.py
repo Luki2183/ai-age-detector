@@ -1,27 +1,57 @@
 import cv2
+import keras as kr
+import time
+import numpy as np
+
+model = kr.models.load_model('models/age_estimation_model.keras')
+
+def load_and_preprocess_image(frame, target_size=(200, 200)):
+    # Zmiana rozmiaru
+    img = cv2.resize(frame, target_size)
+
+    # Normalizacja (0-1)
+    img = img / 255.0
+
+    return img
+
+def predict_age(model, image_path):
+    # Wczytaj i przetwórz zdjęcie
+    img = load_and_preprocess_image(image_path)
+
+    # Dodaj wymiar batch
+    img = np.expand_dims(img, axis=0)
+
+    # Predykcja
+    predicted_age = model.predict(img)[0][0]
+
+    return predicted_age
 
 # Open the default camera
 cam = cv2.VideoCapture(0)
 
-# Get the default frame width and height
-frame_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-# Define the codec and create VideoWriter object
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 while True:
     ret, frame = cam.read()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+    
+    for (x, y, w, h) in faces:
+    #     face = frame[y:y+h, x:x+w]
+    #     cv2.imshow('Detected Face', face)
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        age = predict_age(model, frame)
+        label = "Age: " + str(int(age))
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(frame, label, (x, y - 10), font, 0.8, (255, 0, 0), 2)
+    
+    cv2.imshow('Webcam', frame)
+    
+    # Less fps
+    # time.sleep(0.1)
 
-    # Write the frame to the output file
-
-    # Display the captured frame
-    cv2.imshow('Camera', frame)
-
-    # Press 'q' to exit the loop
-    if cv2.waitKey(1) == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Release the capture and writer objects
 cam.release()
 cv2.destroyAllWindows()
