@@ -2,24 +2,44 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import cv2
+import age_prediction
+import keras as kr
+import time
+
+model = kr.models.load_model('resources/models/age_estimation_model.keras')
 
 camera_loop_id = None
+
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 def open_camera():
     def update_frame():
         global current_img, camera_loop_id
-        ret, frame = cap.read()
-        if ret:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            current_img = Image.fromarray(frame)
-            resize_image()
+        ret, frame = cam.read()
+        
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            age = age_prediction.predict_age(model, frame)
+            label = "Wiek: " + str(int(age))
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(frame, label, (x, y - 10), font, 0.8, (255, 0, 0), 2)
+        
+        # Lower fps
+        time.sleep(0.1)
+
+        current_img = Image.fromarray(frame)
+        resize_image()
         camera_loop_id = panel.after(10, update_frame)
         
     release_cam()
 
-    global cap
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
+    global cam
+    cam = cv2.VideoCapture(0)
+    if not cam.isOpened():
         print("Cannot access camera")
         return
     update_frame()
@@ -40,13 +60,13 @@ def open_picture():
     resize_image()
 
 def release_cam():
-    global cap, camera_loop_id
+    global cam, camera_loop_id
     if camera_loop_id:
         panel.after_cancel(camera_loop_id)
         camera_loop_id = None
     
     try:
-        cap.release()
+        cam.release()
     except:
         pass
 
