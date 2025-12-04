@@ -3,29 +3,33 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import cv2
 
+camera_loop_id = None
 
 def open_camera():
-    global current_img
-    
+    def update_frame():
+        global current_img, camera_loop_id
+        ret, frame = cap.read()
+        if ret:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            current_img = Image.fromarray(frame)
+            resize_image()
+        camera_loop_id = panel.after(10, update_frame)
+        
+    release_cam()
+
+    global cap
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Cannot access camera")
         return
-
-
-    ret, frame = cap.read()
-    if ret:
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        current_img = Image.fromarray(frame)
-        root.update_idletasks()
-        resize_image()
-
-
-    cap.release()
+    update_frame()
 
 
 def open_picture():
     global current_img
+
+    release_cam()
+
     filepath = filedialog.askopenfilename(
         filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp;*.gif")]
     )
@@ -35,6 +39,16 @@ def open_picture():
     root.update_idletasks()
     resize_image()
 
+def release_cam():
+    global cap, camera_loop_id
+    if camera_loop_id:
+        panel.after_cancel(camera_loop_id)
+        camera_loop_id = None
+    
+    try:
+        cap.release()
+    except:
+        pass
 
 root = tk.Tk()
 root.title("Age prediction")
