@@ -1,10 +1,8 @@
 from tensorflow.python import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
-import os
-import numpy as np
-import image_processor
-from sort_data import sortData
+from data_augment import AugmentData
+import pickle
 
 def create_age_estimation_model(input_shape=(200, 200, 3)):
     model = Sequential([
@@ -53,25 +51,8 @@ model.summary()
 # X_train - zdjęcia (numpy array o kształcie (n_samples, 200, 200, 3))
 # Y_train - wiek (numpy array o kształcie (n_samples,))
 
-train_data, val_data, test_data = sortData('resources/UTKFace').get_data()
+X_train, Y_train, X_val, Y_val, X_test, Y_test = AugmentData('resources/UTKFaceSmall').get_data()
 
-def load_utkface_data(data_list: list):
-    images = []
-    ages = []
-    for file_path in data_list:
-        age = int(file_path[file_path.index('\\')+1::].split('_')[0])  # Pobierz wiek z nazwy pliku
-        img = image_processor.preprocess_image_or_frame(file_path, train_data=False)
-        images.append(img)
-        ages.append(age)
-    return np.array(images), np.array(ages)
-
-
-
-X_train, Y_train = load_utkface_data(train_data)
-X_val, Y_val = load_utkface_data(val_data)
-
-# todo
-# validation_data, przygotować dane do walidacji odpowiednio dla przedziałów
 history = model.fit(
     X_train,
     Y_train,
@@ -85,4 +66,10 @@ history = model.fit(
 
 model.save('resources/models/test.keras')
 
-# print(history)
+eval_result = model.evaluate(X_test, Y_test, return_dict=True)
+
+with open('resources/data/history_data', "wb") as file:
+    pickle.dump(history.history, file)
+
+with open('resources/data/eval_data', "wb") as file:
+    pickle.dump(eval_result, file)
