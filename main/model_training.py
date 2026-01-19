@@ -4,6 +4,7 @@ from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 import os
 import numpy as np
 import image_processor
+from sort_data import sortData
 
 def create_age_estimation_model(input_shape=(200, 200, 3)):
     model = Sequential([
@@ -52,31 +53,36 @@ model.summary()
 # X_train - zdjęcia (numpy array o kształcie (n_samples, 200, 200, 3))
 # Y_train - wiek (numpy array o kształcie (n_samples,))
 
+train_data, val_data, test_data = sortData('resources/UTKFace').get_data()
 
-def load_utkface_data(data_dir):
+def load_utkface_data(data_list: list):
     images = []
     ages = []
-    for filename in os.listdir(data_dir):
-        if filename.endswith('.jpg'):
-            age = int(filename.split('_')[0])  # Pobierz wiek z nazwy pliku
-            img_path = os.path.join(data_dir, filename)
-            img = image_processor.preprocess_image_or_frame(img_path, train_data=True)
-            images.append(img)
-            ages.append(age)
+    for file_path in data_list:
+        age = int(file_path[file_path.index('\\')+1::].split('_')[0])  # Pobierz wiek z nazwy pliku
+        img = image_processor.preprocess_image_or_frame(file_path, train_data=False)
+        images.append(img)
+        ages.append(age)
     return np.array(images), np.array(ages)
 
-X_train, y_train = load_utkface_data('resources/data/UTKFace')
+
+
+X_train, Y_train = load_utkface_data(train_data)
+X_val, Y_val = load_utkface_data(val_data)
 
 # todo
 # validation_data, przygotować dane do walidacji odpowiednio dla przedziałów
 history = model.fit(
     X_train,
-    y_train,
-    epochs=30,
-    validation_split=0.2,
-    callbacks=[
-        keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
-    ]
+    Y_train,
+    epochs=3,
+    validation_data=(X_val, Y_val),
+    verbose=1
+    # callbacks=[
+    #     keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
+    # ]
 )
 
-model.save('resources/models/age_estimation_model_intervals.keras')
+model.save('resources/models/test.keras')
+
+# print(history)
