@@ -1,12 +1,22 @@
 from tensorflow.python import keras
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
-import os
-import numpy as np
-import image_processor
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, RandomRotation, RandomZoom, RandomFlip, Input
+from data_augment import AugmentData
+import pickle
 
 def create_age_estimation_model(input_shape=(200, 200, 3)):
+    data_augmentation = Sequential([
+        RandomFlip("horizontal"),
+        RandomRotation(0.1),
+        RandomZoom(0.1)
+    ])
     model = Sequential([
+        # Dla poprawnego wyświetlania parametrów
+        Input(shape=input_shape),
+
+        # Augmentacja danych co każdą epoke
+        data_augmentation,
+
         # Pierwsza warstwa konwolucyjna
         Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
         MaxPooling2D((2, 2)),
@@ -51,32 +61,31 @@ model.summary()
 # Przykładowe dane treningowe
 # X_train - zdjęcia (numpy array o kształcie (n_samples, 200, 200, 3))
 # Y_train - wiek (numpy array o kształcie (n_samples,))
+# augment_percent - procent danych które zostaną augmentowane OGÓLNIE
 
+# OGÓLNY PROCENT AUGMENTACJI DANYCH
+augment_percent = 0
 
-def load_utkface_data(data_dir):
-    images = []
-    ages = []
-    for filename in os.listdir(data_dir):
-        if filename.endswith('.jpg'):
-            age = int(filename.split('_')[0])  # Pobierz wiek z nazwy pliku
-            img_path = os.path.join(data_dir, filename)
-            img = image_processor.preprocess_image_or_frame(img_path, train_data=True)
-            images.append(img)
-            ages.append(age)
-    return np.array(images), np.array(ages)
+# 0 procent
+X_train, Y_train, X_val, Y_val, X_test, Y_test = AugmentData('resources/UTKFaceSmall').get_data(augment_percent)
 
-X_train, y_train = load_utkface_data('resources/data/UTKFace')
-
-# todo
-# validation_data, przygotować dane do walidacji odpowiednio dla przedziałów
 history = model.fit(
     X_train,
-    y_train,
-    epochs=30,
-    validation_split=0.2,
-    callbacks=[
-        keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
-    ]
+    Y_train,
+    epochs=3,
+    validation_data=(X_val, Y_val),
+    verbose=1
+    # callbacks=[
+    #     keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
+    # ]
 )
 
-model.save('resources/models/age_estimation_model_intervals.keras')
+model.save(f'resources/models/test{augment_percent}.keras')
+
+eval_result = model.evaluate(X_test, Y_test, return_dict=True)
+
+with open(f'resources/data/history_data{augment_percent}', "wb") as file:
+    pickle.dump(history.history, file)
+
+with open(f'resources/data/eval_data{augment_percent}', "wb") as file:
+    pickle.dump(eval_result, file)

@@ -6,6 +6,10 @@ import age_prediction
 import keras as kr
 import time
 
+"""
+Main class used to predict age.
+"""
+
 model = kr.models.load_model('resources/models/age_estimation_model.keras')
 
 camera_loop_id = None

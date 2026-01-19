@@ -2,6 +2,10 @@ import keras as kr
 import os
 import age_prediction
 
+"""
+Old way of predicting whole folders of images.
+Deprecated do NOT use.
+"""
 
 model = kr.models.load_model('resources/models/age_estimation_model50e.keras')
 

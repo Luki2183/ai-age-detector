@@ -2,6 +2,16 @@ import image_processor
 import numpy as np
 
 def predict_age(model, image_path):
+    """
+    Klasa używana do predykcji wieku.
+    
+    :param model: wczytany model używany do predykcji
+    :param image_path: ścieżka do pliku
+
+    Returns:
+        float: predykcja w postaci liczby zmiennoprzecinkowej
+    """
+
     # Wczytaj i przetwórz zdjęcie
     img = image_processor.preprocess_image_or_frame(image_path)
 
