@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 import pickle
 
-history = pickle.load(open("resources/data/history_data", "rb"))
-eval_data = pickle.load(open("resources/data/eval_data", "rb"))
+augment_percent_to_show = 0
+
+history = pickle.load(open(f"resources/data/history_data{augment_percent_to_show}", "rb"))
+eval_data = pickle.load(open(f"resources/data/eval_data{augment_percent_to_show}", "rb"))
 
 def plot_history(history):
     for key in history:
@@ -18,4 +20,4 @@ def plot_history(history):
 
 plot_history(history)
 
-print(eval_data)
+print(f'{augment_percent_to_show} percent: {eval_data}')
