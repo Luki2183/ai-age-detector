@@ -1,7 +1,17 @@
 import cv2
 
 def preprocess_image_or_frame(data, target_size=(200, 200), train_data=False):
+    """
+    Funkcja używana do przygotowania zdjęcia, zmiany rozmiaru, normalizacja itp.
+    :param data: ścieżka do pliku lub MatLike obiekt zwrócony przez cv2.imread()
     
+    :param target_size: tuple z rozmiarem do którego będziemy zmieniać zdjęcie
+    :param train_data: wartość logiczna służąca przygotowaniu danych do trenowania(zmiana na skale szarości)
+
+    Returns:
+        MatLike: gotowy obiekt do trenowania/predykcji
+    """
+
     # Sprawdza potrzebe wczytania pliku
     if isinstance(data, str):
         img = cv2.imread(data)

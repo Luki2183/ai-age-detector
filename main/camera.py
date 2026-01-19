@@ -3,6 +3,11 @@ import keras as kr
 import time
 import age_prediction
 
+"""
+Old way of turning on camera.
+Deprecated do NOT use.
+"""
+
 model = kr.models.load_model('resources/models/age_estimation_model.keras')
 
 cam = cv2.VideoCapture(0)
